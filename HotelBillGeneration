@@ -1,0 +1,170 @@
+package com.wipro.hotel.exception;
+
+
+public class InvalidDataException extends Exception {
+    public InvalidDataException() {
+        super("Invalid Data");
+    }
+    public String toString() {
+        return "Invalid Data";
+    }
+}
+package com.wipro.hotel.exception;
+
+
+public class InvalidRoomTypeException extends Exception {
+    public InvalidRoomTypeException() {
+        super("Invalid Room Type");
+    }
+    public String toString() {
+        return "Invalid Room Type";
+    }
+}
+package com.wipro.hotel.entity;
+
+import java.util.Date;
+
+public class Customer {
+    private String customerId;
+    private Date bookingDate;
+    private Date departureDate;
+    private String roomType;
+    private double billAmount;
+
+    public Customer(String customerId, Date bookingDate, Date departureDate, String roomType) {
+        this.customerId = customerId;
+        this.bookingDate = bookingDate;
+        this.departureDate = departureDate;
+        this.roomType = roomType;
+    }
+
+    public double getTariffPerDay() {
+        if (roomType.equalsIgnoreCase("AC")) {
+            return 3725.00;
+        } else {
+            return 2250.00;
+        }
+    }
+
+    public String getCustomerId() {
+        return customerId;
+    }
+
+    public void setBillAmount(double billAmount) {
+        this.billAmount = billAmount;
+    }
+
+    @Override
+    public String toString() {
+        return "Customer id:" + customerId + "\nBill Amount:Rs." + billAmount;
+    }
+}
+package com.wipro.hotel.entity;
+
+public class Offer 
+{
+	public double getOffer(String roomType,double billAmount)
+	{
+		double offer=0;
+		if ("AC".equalsIgnoreCase(roomType))
+		{
+			if(billAmount <= 5000)
+			{
+				offer=0;
+			}
+			else if(billAmount > 5000 && billAmount <= 10000)
+			{
+				offer=12;
+			}
+			else if(billAmount > 10000)
+			{
+				offer=18;
+			}
+		}
+		return offer;
+	}
+}
+package com.wipro.hotel.service;
+
+import com.wipro.hotel.entity.Customer;
+import com.wipro.hotel.entity.Offer;
+import com.wipro.hotel.exception.InvalidDataException;
+import com.wipro.hotel.exception.InvalidRoomTypeException;
+
+import java.util.Date;
+
+public class HotelBillService {
+
+   
+    public String validateData(String customerId, Date bookingDate, Date departureDate, String roomType) 
+            throws InvalidDataException, InvalidRoomTypeException 
+    {
+        if (customerId == null || customerId.length() != 8)
+        {
+            throw new InvalidDataException();
+        }
+        if (bookingDate == null || departureDate == null || !bookingDate.before(departureDate)) 
+        {
+            throw new InvalidDataException();
+        }
+        if (!roomType.equals("AC") && !roomType.equals("Non-AC"))
+        {
+            throw new InvalidRoomTypeException();
+        }
+        return "Valid";
+    }
+    public int getDaysStayed(Date bookingDate, Date departureDate)
+    {
+        long diffInMillis = departureDate.getTime() - bookingDate.getTime();
+        return (int) (diffInMillis / 86400000); 
+    }
+    public String calculateBill(String customerId, Date bookingDate, Date departureDate, String roomType)
+    {
+        try {
+            String validation = validateData(customerId, bookingDate, departureDate, roomType);
+
+            if (!validation.equals("Valid")) {
+                return validation;
+            }
+            Customer customer = new Customer(customerId, bookingDate, departureDate, roomType);
+            int daysStayed = getDaysStayed(bookingDate, departureDate);
+            double tariffPerDay = customer.getTariffPerDay();
+            double billAmount = daysStayed * tariffPerDay;
+            double tax;
+            if (billAmount <= 5000) {
+                tax = billAmount * 0.05;  
+            } else if (billAmount <= 10000) {
+                tax = billAmount * 0.10; 
+            } else {
+                tax = billAmount * 0.20; 
+            }
+            double totalBillAmount = billAmount + tax;
+            Offer offer = new Offer();
+            double discount = offer.getOffer(roomType, totalBillAmount);
+            double finalBill = totalBillAmount - discount;
+            customer.setBillAmount(finalBill);
+            return customer.toString();
+        } catch (InvalidDataException | InvalidRoomTypeException e) {
+            return e.toString();
+        }
+    }
+}
+package com.wipro.hotel.main;
+
+import com.wipro.hotel.service.HotelBillService;
+
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
+public class MainClass {
+
+    public static void main(String[] args) throws Exception {
+    	System.out.println("717823E218"+" "+"Guruprasath Haridoss");
+        SimpleDateFormat formatter = new SimpleDateFormat("dd/MM/yyyy");
+        HotelBillService hotelBillService = new HotelBillService();
+        Date bookingDate = formatter.parse("24/09/2024");
+        Date departureDate = formatter.parse("26/09/2024");
+        String result = hotelBillService.calculateBill("FF717234", bookingDate, departureDate, "A");
+        System.out.println(result);
+    }
+}
